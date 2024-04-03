@@ -1625,25 +1625,25 @@ static inline CONSTEXPR audio_channel_mask_t audio_channel_out_mask_from_count(
     case 2:
         bits = AUDIO_CHANNEL_OUT_STEREO;
         break;
-    case 3: // 2.1
-        bits = AUDIO_CHANNEL_OUT_STEREO | AUDIO_CHANNEL_OUT_LOW_FREQUENCY;
+    case 3:
+        bits = AUDIO_CHANNEL_OUT_2POINT1;
         break;
     case 4: // 4.0
         bits = AUDIO_CHANNEL_OUT_QUAD;
         break;
     case 5: // 5.0
-        bits = AUDIO_CHANNEL_OUT_QUAD | AUDIO_CHANNEL_OUT_FRONT_CENTER;
+        bits = AUDIO_CHANNEL_OUT_PENTA;
         break;
-    case 6: // 5.1
+    case 6:
         bits = AUDIO_CHANNEL_OUT_5POINT1;
         break;
-    case 7: // 6.1
-        bits = AUDIO_CHANNEL_OUT_5POINT1 | AUDIO_CHANNEL_OUT_BACK_CENTER;
+    case 7:
+        bits = AUDIO_CHANNEL_OUT_6POINT1;
         break;
     case FCC_8:
         bits = AUDIO_CHANNEL_OUT_7POINT1;
         break;
-    case 10: // 5.1.4
+    case 10:
         bits = AUDIO_CHANNEL_OUT_5POINT1POINT4;
         break;
     case FCC_12:
@@ -1712,6 +1712,12 @@ static inline audio_channel_mask_t audio_channel_mask_in_to_out(audio_channel_ma
         return AUDIO_CHANNEL_OUT_MONO;
     case AUDIO_CHANNEL_IN_STEREO:
         return AUDIO_CHANNEL_OUT_STEREO;
+    case AUDIO_CHANNEL_IN_2POINT1:
+        return AUDIO_CHANNEL_OUT_2POINT1;
+    case AUDIO_CHANNEL_IN_QUAD:
+        return AUDIO_CHANNEL_OUT_QUAD;
+    case AUDIO_CHANNEL_IN_PENTA:
+        return AUDIO_CHANNEL_OUT_PENTA;
     case AUDIO_CHANNEL_IN_5POINT1:
         return AUDIO_CHANNEL_OUT_5POINT1;
     case AUDIO_CHANNEL_IN_3POINT1POINT2:
@@ -1734,6 +1740,12 @@ static inline audio_channel_mask_t audio_channel_mask_out_to_in(audio_channel_ma
         return AUDIO_CHANNEL_IN_MONO;
     case AUDIO_CHANNEL_OUT_STEREO:
         return AUDIO_CHANNEL_IN_STEREO;
+    case AUDIO_CHANNEL_OUT_2POINT1:
+        return AUDIO_CHANNEL_IN_2POINT1;
+    case AUDIO_CHANNEL_OUT_QUAD:
+        return AUDIO_CHANNEL_IN_QUAD;
+    case AUDIO_CHANNEL_OUT_PENTA:
+        return AUDIO_CHANNEL_IN_PENTA;
     case AUDIO_CHANNEL_OUT_5POINT1:
         return AUDIO_CHANNEL_IN_5POINT1;
     case AUDIO_CHANNEL_OUT_3POINT1POINT2:
@@ -2005,8 +2017,13 @@ static inline size_t audio_bytes_per_sample(audio_format_t format)
 
 static inline size_t audio_bytes_per_frame(uint32_t channel_count, audio_format_t format)
 {
-    // cannot overflow for reasonable channel_count
-    return channel_count * audio_bytes_per_sample(format);
+    if (audio_has_proportional_frames(format)) {
+        // cannot overflow for reasonable channel_count
+        return channel_count * audio_bytes_per_sample(format);
+    } else {
+        // compressed formats have a frame size of 1 by convention.
+        return sizeof(uint8_t);
+    }
 }
 
 /* converts device address to string sent to audio HAL via set_parameters */
@@ -2402,6 +2419,14 @@ __END_DECLS
 #define AUDIO_PARAMETER_RECONFIG_A2DP "reconfigA2dp"
 /* Query if HwModule supports reconfiguration of offloaded A2DP codec */
 #define AUDIO_PARAMETER_A2DP_RECONFIG_SUPPORTED "isReconfigA2dpSupported"
+
+/* Query if HwModule supports variable Bluetooth latency control */
+#define AUDIO_PARAMETER_BT_VARIABLE_LATENCY_SUPPORTED "isBtVariableLatencySupported"
+
+/* Reconfigure offloaded LE codec */
+#define AUDIO_PARAMETER_RECONFIG_LE "reconfigLe"
+/* Query if HwModule supports reconfiguration of offloaded LE codec */
+#define AUDIO_PARAMETER_LE_RECONFIG_SUPPORTED "isReconfigLeSupported"
 
 /**
  * For querying device supported encapsulation capabilities. All returned values are integer,
